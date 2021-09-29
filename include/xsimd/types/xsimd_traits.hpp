@@ -29,47 +29,55 @@ namespace xsimd
 
     namespace detail
     {
-        template <class T, bool>
+        template <class T, bool /*has_simd_register*/, bool /*is_complex*/>
         struct simd_traits_impl;
 
-        template <class T>
-        struct simd_traits_impl<T, false>
+        template <class T, bool is_complex>
+        struct simd_traits_impl<T, false, is_complex>
         {
             using type = T;
             using bool_type = bool;
             static constexpr size_t size = 1;
         };
 
-        template <class T>
-        constexpr size_t simd_traits_impl<T, false>::size;
+        // template <class T>
+        // constexpr size_t simd_traits_impl<T, false>::size;
 
         template <class T>
-        struct simd_traits_impl<T, true>
+        struct simd_traits_impl<T, true, false>
         {
             using type = batch<T>;
             using bool_type = typename type::batch_bool_type;
             static constexpr size_t size = type::size;
         };
 
+        struct invalid_type{};
         template <class T>
-        constexpr size_t simd_traits_impl<T, true>::size;
+        struct simd_traits_impl<T, true, true>
+        {
+            using type = batch<T>;
+            static constexpr size_t size = type::size;
+             using bool_type = invalid_type;
+        };
+        // template <class T>
+        // constexpr size_t simd_traits_impl<T, true>::size;
     }
 
     template <class T>
-    struct simd_traits : detail::simd_traits_impl<T, has_simd_register<T>::value>
+    struct simd_traits : detail::simd_traits_impl<T, has_simd_register<T>::value, false>
     {
     };
 
     template <class T>
     struct simd_traits<std::complex<T>>
-        : detail::simd_traits_impl<std::complex<T>, has_simd_register<T>::value>
+        : detail::simd_traits_impl<std::complex<T>, has_simd_register<T>::value, true>
     {
     };
 
 #ifdef XSIMD_ENABLE_XTL_COMPLEX
     template <class T, bool i3ec>
     struct simd_traits<xtl::xcomplex<T, T, i3ec>>
-        : detail::simd_traits_impl<std::complex<T>, has_simd_register<T>::value>
+        : detail::simd_traits_impl<std::complex<T>, has_simd_register<T>::value, true>
     {
     };
 #endif
